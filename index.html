@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Exclusive Video</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap');
+        
+        :root {
+            --bg-color: #0f1115;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #8b92a5;
+            --accent-red: #ff2a2a;
+            --accent-green: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        /* Common Container */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .step-container {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        .step-container.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- STEP 1 STYLES --- */
+        header {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subheadline {
+            font-size: 15px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 9/16;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        video, .video-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+            pointer-events: none;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 17, 21, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 10;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .warning-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 42, 42, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .warning-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-red);
+        }
+
+        .overlay-msg {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 24px;
+            line-height: 1.3;
+        }
+
+        .cta-btn-red {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 32px;
+            font-size: 18px;
+            font-weight: 800;
+            width: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 24px rgba(255, 42, 42, 0.3);
+            animation: pulse-red 2s infinite;
+        }
+
+        .cta-btn-red:active { transform: scale(0.96); }
+
+        .urgency {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-red);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 42, 42, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 42, 42, 0); }
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .progress-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            z-index: 5;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-red);
+            width: 0%;
+        }
+
+
+        /* --- STEP 2 STYLES --- */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 32px 24px;
+            text-align: center;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            width: 100%;
+            max-width: 400px;
+            margin-top: 40px;
+        }
+
+        .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+        }
+
+        .icon-wrapper svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--accent-green);
+        }
+
+        .step2-h1 {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        .description {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .badge svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-muted);
+        }
+
+        .cta-btn-green {
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 32px;
+            font-size: 18px;
+            font-weight: 800;
+            width: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25);
+        }
+
+        .cta-btn-green:active { transform: scale(0.96); }
+
+        .disclaimer {
+            font-size: 12px;
+            color: #5a6072;
+            margin-top: 20px;
+            line-height: 1.4;
+        }
+
+        .timer-container {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--accent-green);
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.05);
+            padding: 8px 16px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- STEP 1: Curiosity Bridge Page -->
+        <div id="step1" class="step-container active">
+            <header>
+                <h1>The footage everyone is talking about</h1>
+                <p class="subheadline">Watch before it gets taken down...</p>
+            </header>
+
+            <div class="video-wrapper">
+                <!-- YouTube Video Container -->
+                <div id="teaser-video"></div>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress"></div>
+                </div>
+
+                <div class="overlay" id="interruption-overlay">
+                    <div class="warning-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </div>
+                    <div class="overlay-msg">This part couldn’t be shown publicly.</div>
+                    
+                    <!-- Button to switch to Step 2 -->
+                    <button id="goToStep2" class="cta-btn-red">Continue Watching</button>
+                    
+                    <div class="urgency">
+                        <div class="pulse-dot"></div>
+                        Due to high demand, access may be limited
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: Pre-lander / Access Page -->
+        <div id="step2" class="step-container">
+            <div class="card">
+                <div class="icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
+                
+                <h1 class="step2-h1">You're one step away from watching</h1>
+                <p class="description">Please confirm your access to view the rest of this exclusive footage.</p>
+
+                <div class="trust-badges">
+                    <div class="badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        Secure Access
+                    </div>
+                    <div class="badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        Fast Verification
+                    </div>
+                </div>
+
+                <!-- PLACEHOLDER CPA LINK: Replace '#' with your actual CPA link -->
+                <a href="#" class="cta-btn-green" id="cpa-link">
+                    Unlock Full Video
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                </a>
+
+                <div class="timer-container" id="timer">
+                    Access expires in: 04:59
+                </div>
+
+                <p class="disclaimer">You may be redirected to a partner page to complete verification.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        let player;
+        const interruptTime = 3.5; 
+        let hasInterrupted = false;
+        let timeUpdateInterval;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('teaser-video', {
+                videoId: '2RTMkCV0Zrw',
+                host: 'https://www.youtube-nocookie.com',
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0,
+                    'mute': 1,
+                    'playsinline': 1,
+                    'loop': 1,
+                    'playlist': '2RTMkCV0Zrw',
+                    'rel': 0,
+                    'modestbranding': 1,
+                    'disablekb': 1,
+                    'origin': 'http://localhost'
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            event.target.playVideo();
+            timeUpdateInterval = setInterval(updateTime, 100);
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data == YT.PlayerState.PLAYING && !timeUpdateInterval) {
+                timeUpdateInterval = setInterval(updateTime, 100);
+            } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.ENDED) {
+                clearInterval(timeUpdateInterval);
+                timeUpdateInterval = null;
+            }
+        }
+
+        function updateTime() {
+            if (!player || !player.getCurrentTime || !player.getDuration) return;
+            
+            const currentTime = player.getCurrentTime();
+            const duration = player.getDuration();
+            
+            if (duration > 0) {
+                const progressBar = document.getElementById("progress");
+                const progress = (currentTime / duration) * 100;
+                if(progressBar) progressBar.style.width = `${progress}%`;
+            }
+
+            if (currentTime >= interruptTime && !hasInterrupted) {
+                hasInterrupted = true;
+                player.pauseVideo();
+                document.getElementById("interruption-overlay").classList.add("active");
+                clearInterval(timeUpdateInterval);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const step1 = document.getElementById("step1");
+            const step2 = document.getElementById("step2");
+            const goToStep2Btn = document.getElementById("goToStep2");
+            const timerElement = document.getElementById("timer");
+
+            // Navigation Logic (Switching steps)
+            goToStep2Btn.addEventListener("click", () => {
+                // Hide Step 1 and Show Step 2
+                step1.classList.remove("active");
+                step2.classList.add("active");
+                
+                // Stop video completely if they move to step 2
+                if (player && player.stopVideo) {
+                    player.stopVideo();
+                }
+                
+                // Start the timer only when Step 2 is shown
+                startTimer(); 
+            });
+
+            // Step 2: Timer Logic
+            function startTimer() {
+                let timeLeft = 299; // 4:59 in seconds
+                
+                const countdown = setInterval(() => {
+                    if (timeLeft <= 0) {
+                        clearInterval(countdown);
+                        timerElement.textContent = "Access expiring soon!";
+                        return;
+                    }
+                    
+                    const minutes = Math.floor(timeLeft / 60);
+                    const seconds = timeLeft % 60;
+                    
+                    timerElement.textContent = `Access expires in: 0${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    timeLeft--;
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
