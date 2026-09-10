@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>محرر بيانات Metadata & EXIF</title>
+  <title>محرر بيانات EXIF و GPS للصور</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- مكتبة Piexifjs لقراءة وتعديل الـ EXIF -->
+  <!-- مكتبة Piexifjs للتعامل مع EXIF و GPS -->
   <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
   
   <style>
@@ -21,19 +20,19 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col items-center">
 
-  <div class="w-full max-w-4xl">
-    <!-- العنوان -->
+  <div class="w-full max-w-3xl">
+    <!-- Header -->
     <header class="text-center mb-6">
       <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-        محرر بيانات Metadata & EXIF
+        محرر بيانات Metadata & EXIF & GPS
       </h1>
-      <p class="text-slate-400 mt-2 text-xs md:text-sm">
-        رفع أي صورة (JPG / JPEG) لتعديل أو مسح بيانات الكاميرا، المؤلف، التاريخ والموقع.
+      <p class="text-slate-400 mt-1 text-xs md:text-sm">
+        عدل معلومات الكاميرا، التاريخ، أو موقع الصورة الجغرافي (GPS) بكل سهولة.
       </p>
     </header>
 
-    <!-- منطقة رفع الصورة -->
-    <div id="dropZone" class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-500 transition-all rounded-2xl p-6 text-center cursor-pointer bg-slate-800/60 mb-6 backdrop-blur">
+    <!-- Upload Zone -->
+    <div id="dropZone" class="border-2 border-dashed border-indigo-500/40 hover:border-indigo-500 transition rounded-2xl p-6 text-center cursor-pointer bg-slate-800/60 mb-6">
       <input type="file" id="imageInput" accept="image/jpeg, image/jpg" class="hidden">
       <div class="flex flex-col items-center justify-center pointer-events-none">
         <svg class="w-12 h-12 text-indigo-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,81 +43,96 @@
       </div>
     </div>
 
-    <!-- مكان التعديل (كيكون مخفي حتى كترفع الصورة) -->
-    <div id="editorArea" class="hidden space-y-6">
+    <!-- مكان التعديل -->
+    <div id="editorArea" class="hidden space-y-5">
       
-      <!-- المعاينة وزر الحذف -->
-      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4">
+      <!-- Preview -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4">
         <div class="w-full h-56 rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-700/50">
           <img id="imagePreview" src="" alt="Preview" class="max-h-full max-w-full object-contain">
         </div>
         <div id="fileInfo" class="mt-2 text-xs text-slate-400 text-center"></div>
       </div>
 
-      <!-- خانات تعديل الميتاداتا -->
-      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-xl">
-        <h2 class="text-base font-bold text-indigo-300 mb-4 border-b border-slate-700 pb-2">تعديل معلومات الـ Metadata</h2>
+      <!-- خانات التعديل -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-5 shadow-xl space-y-4">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- الكاتب / المصور -->
-          <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">المصور / الكاتب (Artist)</label>
-            <input type="text" id="artistInput" placeholder="Ayoub Benlhaj" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+        <!-- قسم الـ GPS / اللوكاليزاسيون -->
+        <div class="bg-indigo-950/40 border border-indigo-500/30 p-4 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-bold text-indigo-300 flex items-center gap-1.5">
+              <span>📍</span> موقع الصورة الجغرافي (GPS Location)
+            </h3>
+            <button type="button" id="getCurrentLocBtn" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 rounded-lg transition font-medium flex items-center gap-1">
+              موقعي الحالي
+            </button>
           </div>
 
-          <!-- حقوق النشر -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">خط العرض (Latitude)</label>
+              <input type="number" step="any" id="latInput" placeholder="مثال: 33.5731" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">خط الطول (Longitude)</label>
+              <input type="number" step="any" id="lngInput" placeholder="مثال: -7.5898" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-2">
+            * يمكنك كتابة الإحداثيات مباشرة أو الضغط على "موقعي الحالي". اتركها فارغة لحذف الموقع من الصورة.
+          </p>
+        </div>
+
+        <!-- معلومات الكاميرا والتاريخ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">حقوق النشر (Copyright)</label>
-            <input type="text" id="copyrightInput" placeholder="© 2026 All Rights Reserved" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            <label class="block text-xs text-slate-400 mb-1">المصور / الكاتب (Artist)</label>
+            <input type="text" id="artistInput" placeholder="اسم المصور" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none">
           </div>
 
-          <!-- شركة الكاميرا -->
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">ماركة الهاتف أو الكاميرا (Make)</label>
-            <input type="text" id="makeInput" placeholder="Apple, Sony, Canon..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            <label class="block text-xs text-slate-400 mb-1">حقوق النشر (Copyright)</label>
+            <input type="text" id="copyrightInput" placeholder="© 2026 حقوق النشر" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none">
           </div>
 
-          <!-- موديل الكاميرا -->
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">موديل الجهاز (Model)</label>
-            <input type="text" id="modelInput" placeholder="iPhone 15 Pro, A7 IV..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            <label class="block text-xs text-slate-400 mb-1">ماركة الجهاز (Make)</label>
+            <input type="text" id="makeInput" placeholder="Apple, Samsung, Canon..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none">
           </div>
 
-          <!-- البرنامج المستعمل -->
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">البرنامج (Software)</label>
-            <input type="text" id="softwareInput" placeholder="Photoshop, Lightroom..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            <label class="block text-xs text-slate-400 mb-1">موديل الجهاز (Model)</label>
+            <input type="text" id="modelInput" placeholder="iPhone 15, Galaxy S24..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none">
           </div>
 
-          <!-- تاريخ التقاط الصورة -->
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">تاريخ الالتقاط (YYYY:MM:DD HH:MM:SS)</label>
-            <input type="text" id="dateInput" placeholder="2026:05:14 16:30:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
+            <label class="block text-xs text-slate-400 mb-1">تاريخ الالتقاط (YYYY:MM:DD HH:MM:SS)</label>
+            <input type="text" id="dateInput" placeholder="2026:05:14 15:30:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
           </div>
 
-          <!-- وصف الصورة -->
-          <div class="md:col-span-2">
-            <label class="block text-xs font-medium text-slate-400 mb-1">وصف الصورة (Image Description)</label>
-            <textarea id="descInput" rows="2" placeholder="وصف الصورة أو الكلمات المفتاحية..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"></textarea>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">البرنامج (Software)</label>
+            <input type="text" id="softwareInput" placeholder="Photoshop, Lightroom..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:border-indigo-500 focus:outline-none">
           </div>
         </div>
 
         <!-- أزرار الحفظ والمسح -->
-        <div class="mt-6 pt-4 border-t border-slate-700 flex flex-col md:flex-row gap-3">
-          <button id="saveBtn" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition duration-200 flex items-center justify-center gap-2">
-            حفظ وتنزيل الصورة المعدلة
+        <div class="mt-5 pt-4 border-t border-slate-700 flex flex-col gap-2">
+          <button id="saveBtn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition shadow-lg flex items-center justify-center gap-2 text-sm">
+            حفظ وتنزيل الصورة بالتعديلات الجديدة
           </button>
-          <button id="stripBtn" class="py-3 px-4 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-600/40 rounded-xl font-medium transition duration-200 flex items-center justify-center gap-2 text-xs md:text-sm">
-            مسح جميع الميتاداتا كلياً
+          
+          <button id="stripBtn" class="w-full py-2.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-600/40 rounded-xl font-medium transition text-xs flex items-center justify-center gap-2">
+            مسح جميع البيانات والـ GPS كلياً (Clean Photo)
           </button>
         </div>
-      </div>
 
+      </div>
     </div>
   </div>
 
-  <!-- إشعار عند التنزيل -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-indigo-500/50 text-indigo-300 px-5 py-2.5 rounded-full text-xs md:text-sm font-medium shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none z-50"></div>
+  <!-- إشعار عند الحفظ -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-indigo-500 text-indigo-300 px-4 py-2 rounded-full text-xs font-medium shadow-2xl opacity-0 transition duration-300 pointer-events-none z-50"></div>
 
   <script>
     const dropZone = document.getElementById('dropZone');
@@ -127,20 +141,23 @@
     const imagePreview = document.getElementById('imagePreview');
     const fileInfo = document.getElementById('fileInfo');
 
+    const latInput = document.getElementById('latInput');
+    const lngInput = document.getElementById('lngInput');
+    const getCurrentLocBtn = document.getElementById('getCurrentLocBtn');
+
     const artistInput = document.getElementById('artistInput');
     const copyrightInput = document.getElementById('copyrightInput');
     const makeInput = document.getElementById('makeInput');
     const modelInput = document.getElementById('modelInput');
     const softwareInput = document.getElementById('softwareInput');
     const dateInput = document.getElementById('dateInput');
-    const descInput = document.getElementById('descInput');
 
     const saveBtn = document.getElementById('saveBtn');
     const stripBtn = document.getElementById('stripBtn');
     const toast = document.getElementById('toast');
 
     let currentDataUrl = '';
-    let currentFileName = 'photo.jpg';
+    let currentFileName = 'image.jpg';
     let currentExif = null;
 
     function notify(msg) {
@@ -183,10 +200,30 @@
 
         editorArea.classList.remove('hidden');
         dropZone.classList.add('hidden');
-        notify("تم تحميل الصورة بنجاح!");
+        notify("تم تحميل بيانات الصورة والـ GPS بنجاح!");
       };
 
       reader.readAsDataURL(file);
+    }
+
+    // دوال تحويل الـ GPS بين الدرجات العادية و DMS الخاص بـ EXIF
+    function degToDmsRational(deg) {
+      const absolute = Math.abs(deg);
+      const degrees = Math.floor(absolute);
+      const minutesNotTruncated = (absolute - degrees) * 60;
+      const minutes = Math.floor(minutesNotTruncated);
+      const seconds = Math.round((minutesNotTruncated - minutes) * 60 * 100);
+      return [[degrees, 1], [minutes, 1], [seconds, 100]];
+    }
+
+    function dmsRationalToDeg(dms, ref) {
+      if (!dms || dms.length < 3) return '';
+      const d = dms[0][0] / dms[0][1];
+      const m = dms[1][0] / dms[1][1];
+      const s = dms[2][0] / dms[2][1];
+      let deg = d + m / 60 + s / 3600;
+      if (ref === 'S' || ref === 'W') deg = -deg;
+      return deg.toFixed(6);
     }
 
     function populateFields(exif) {
@@ -195,16 +232,21 @@
 
       const zeroth = exif["0th"] || {};
       const exifSub = exif["Exif"] || {};
+      const gps = exif["GPS"] || {};
 
       if (zeroth[piexif.ImageIFD.Artist]) artistInput.value = zeroth[piexif.ImageIFD.Artist];
       if (zeroth[piexif.ImageIFD.Copyright]) copyrightInput.value = zeroth[piexif.ImageIFD.Copyright];
       if (zeroth[piexif.ImageIFD.Make]) makeInput.value = zeroth[piexif.ImageIFD.Make];
       if (zeroth[piexif.ImageIFD.Model]) modelInput.value = zeroth[piexif.ImageIFD.Model];
       if (zeroth[piexif.ImageIFD.Software]) softwareInput.value = zeroth[piexif.ImageIFD.Software];
-      if (zeroth[piexif.ImageIFD.ImageDescription]) descInput.value = zeroth[piexif.ImageIFD.ImageDescription];
+      if (exifSub[piexif.ExifIFD.DateTimeOriginal]) dateInput.value = exifSub[piexif.ExifIFD.DateTimeOriginal];
 
-      if (exifSub[piexif.ExifIFD.DateTimeOriginal]) {
-        dateInput.value = exifSub[piexif.ExifIFD.DateTimeOriginal];
+      // قراءة الـ GPS إذا كان موجود
+      if (gps[piexif.GPSIFD.GPSLatitude] && gps[piexif.GPSIFD.GPSLatitudeRef]) {
+        latInput.value = dmsRationalToDeg(gps[piexif.GPSIFD.GPSLatitude], gps[piexif.GPSIFD.GPSLatitudeRef]);
+      }
+      if (gps[piexif.GPSIFD.GPSLongitude] && gps[piexif.GPSIFD.GPSLongitudeRef]) {
+        lngInput.value = dmsRationalToDeg(gps[piexif.GPSIFD.GPSLongitude], gps[piexif.GPSIFD.GPSLongitudeRef]);
       }
     }
 
@@ -215,9 +257,30 @@
       modelInput.value = '';
       softwareInput.value = '';
       dateInput.value = '';
-      descInput.value = '';
+      latInput.value = '';
+      lngInput.value = '';
     }
 
+    // زر جلب الموقع الحالي من متصفح الهاتف
+    getCurrentLocBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert("المتصفح لا يدعم تحديد الموقع!");
+        return;
+      }
+      notify("جاري تحديد موقعك...");
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          latInput.value = pos.coords.latitude.toFixed(6);
+          lngInput.value = pos.coords.longitude.toFixed(6);
+          notify("تم تحديد موقعك بنجاح!");
+        },
+        (err) => {
+          alert("تعذر جلب الموقع: يرجى تفعيل الـ GPS في الهاتف والسماح للمتصفح بالوصول إليه.");
+        }
+      );
+    });
+
+    // حفظ التعديلات
     saveBtn.addEventListener('click', () => {
       if (!currentDataUrl) return;
 
@@ -227,35 +290,48 @@
         }
         if (!currentExif["0th"]) currentExif["0th"] = {};
         if (!currentExif["Exif"]) currentExif["Exif"] = {};
+        if (!currentExif["GPS"]) currentExif["GPS"] = {};
 
+        // حفظ البيانات النصية
         if (artistInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Artist] = artistInput.value.trim();
         if (copyrightInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Copyright] = copyrightInput.value.trim();
         if (makeInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Make] = makeInput.value.trim();
         if (modelInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Model] = modelInput.value.trim();
         if (softwareInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Software] = softwareInput.value.trim();
-        if (descInput.value.trim()) currentExif["0th"][piexif.ImageIFD.ImageDescription] = descInput.value.trim();
+        if (dateInput.value.trim()) currentExif["Exif"][piexif.ExifIFD.DateTimeOriginal] = dateInput.value.trim();
 
-        if (dateInput.value.trim()) {
-          currentExif["Exif"][piexif.ExifIFD.DateTimeOriginal] = dateInput.value.trim();
+        // حفظ الـ GPS
+        const lat = parseFloat(latInput.value);
+        const lng = parseFloat(lngInput.value);
+
+        if (!isNaN(lat) && !isNaN(lng)) {
+          currentExif["GPS"][piexif.GPSIFD.GPSLatitudeRef] = lat >= 0 ? 'N' : 'S';
+          currentExif["GPS"][piexif.GPSIFD.GPSLatitude] = degToDmsRational(lat);
+          currentExif["GPS"][piexif.GPSIFD.GPSLongitudeRef] = lng >= 0 ? 'E' : 'W';
+          currentExif["GPS"][piexif.GPSIFD.GPSLongitude] = degToDmsRational(lng);
+        } else if (latInput.value.trim() === '' && lngInput.value.trim() === '') {
+          // مسح الـ GPS إذا كانت الخانات فارغة
+          currentExif["GPS"] = {};
         }
 
         const exifBytes = piexif.dump(currentExif);
         const newImageDataUrl = piexif.insert(exifBytes, currentDataUrl);
 
         downloadImage(newImageDataUrl, `modified_${currentFileName}`);
-        notify("تم حفظ وتنزيل الصورة بنجاح!");
+        notify("تم حفظ الإحداثيات والبيانات بنجاح!");
       } catch (err) {
-        alert("خطأ: " + err.message);
+        alert("خطأ أثناء حفظ البيانات: " + err.message);
       }
     });
 
+    // مسح كل شيء
     stripBtn.addEventListener('click', () => {
       if (!currentDataUrl) return;
       try {
         const cleanedDataUrl = piexif.remove(currentDataUrl);
         clearInputs();
         downloadImage(cleanedDataUrl, `cleaned_${currentFileName}`);
-        notify("تم حذف بيانات EXIF وتنزيل الصورة!");
+        notify("تم مسح الـ EXIF والـ GPS بالكامل!");
       } catch (err) {
         alert("خطأ: " + err.message);
       }
@@ -271,1500 +347,4 @@
     }
   </script>
 </body>
-</html>
-        <span class="text-xs text-slate-400 mt-1">يدعم صيغ JPG / JPEG (الصيغ القياسية لـ EXIF)</span>
-      </div>
-    </div>
-
-    <!-- Editor Workspace (Hidden by default) -->
-    <div id="editorArea" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
-      <!-- Preview Column -->
-      <div class="lg:col-span-5 flex flex-col gap-4">
-        <div class="bg-slate-800 border border-slate-700/60 rounded-2xl p-4 shadow-xl">
-          <h2 class="text-sm font-semibold text-slate-300 mb-3">معاينة الصورة</h2>
-          <div class="w-full h-72 rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-700/40">
-            <img id="imagePreview" src="" alt="Preview" class="max-h-full max-w-full object-contain">
-          </div>
-          <div id="fileInfo" class="mt-3 text-xs text-slate-400 space-y-1"></div>
-        </div>
-
-        <!-- Quick Actions -->
-        <button id="stripBtn" class="w-full py-3 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-600/40 rounded-xl font-medium transition duration-200 flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-          حذف جميع بيانات EXIF (Clean Metadata)
-        </button>
-      </div>
-
-      <!-- Form Column -->
-      <div class="lg:col-span-7 bg-slate-800 border border-slate-700/60 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
-        <div>
-          <h2 class="text-lg font-bold text-indigo-300 mb-4 border-b border-slate-700 pb-2">تعديل حقول الميتاداتا (EXIF Data)</h2>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Artist / Author -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">المصوّر / الكاتب (Artist)</label>
-              <input type="text" id="artistInput" placeholder="Ayoub Benlhaj" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-            </div>
-
-            <!-- Copyright -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">حقوق النشر (Copyright)</label>
-              <input type="text" id="copyrightInput" placeholder="© 2026 All Rights Reserved" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-            </div>
-
-            <!-- Camera Make -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">صانع الكاميرا (Make)</label>
-              <input type="text" id="makeInput" placeholder="Sony, Canon, Apple..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-            </div>
-
-            <!-- Camera Model -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">موديل الكاميرا (Model)</label>
-              <input type="text" id="modelInput" placeholder="A7 IV, EOS R5, iPhone..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-            </div>
-
-            <!-- Software -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">البرنامج المستعمل (Software)</label>
-              <input type="text" id="softwareInput" placeholder="Adobe Photoshop, Lightroom..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
-            </div>
-
-            <!-- Date Taken -->
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">تاريخ ووقت الالتقاط (YYYY:MM:DD HH:MM:SS)</label>
-              <input type="text" id="dateInput" placeholder="2026:05:14 16:20:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
-            </div>
-
-            <!-- Image Description -->
-            <div class="md:col-span-2">
-              <label class="block text-xs font-medium text-slate-400 mb-1">وصف الصورة (Image Description)</label>
-              <textarea id="descInput" rows="2" placeholder="وصف محتوى الصورة أو الكلمات المفتاحية..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Download Buttons -->
-        <div class="mt-6 pt-4 border-t border-slate-700">
-          <button id="saveBtn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/30 transition duration-200 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            تطبيق التعديلات وتحميل الصورة الجديدة
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-indigo-500/50 text-indigo-300 px-6 py-3 rounded-full text-sm font-medium shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none"></div>
-
-  <!-- JavaScript Logic -->
-  <script>
-    const dropZone = document.getElementById('dropZone');
-    const imageInput = document.getElementById('imageInput');
-    const editorArea = document.getElementById('editorArea');
-    const imagePreview = document.getElementById('imagePreview');
-    const fileInfo = document.getElementById('fileInfo');
-
-    const artistInput = document.getElementById('artistInput');
-    const copyrightInput = document.getElementById('copyrightInput');
-    const makeInput = document.getElementById('makeInput');
-    const modelInput = document.getElementById('modelInput');
-    const softwareInput = document.getElementById('softwareInput');
-    const dateInput = document.getElementById('dateInput');
-    const descInput = document.getElementById('descInput');
-
-    const saveBtn = document.getElementById('saveBtn');
-    const stripBtn = document.getElementById('stripBtn');
-    const toast = document.getElementById('toast');
-
-    let currentDataUrl = '';
-    let currentFileName = 'image_modified.jpg';
-    let currentExif = null;
-
-    // Toast notification
-    function showNotification(msg) {
-      toast.textContent = msg;
-      toast.classList.remove('opacity-0');
-      toast.classList.add('opacity-100');
-      setTimeout(() => {
-        toast.classList.remove('opacity-100');
-        toast.classList.add('opacity-0');
-      }, 3000);
-    }
-
-    // Drag and Drop Events
-    dropZone.addEventListener('click', () => imageInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-400'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-indigo-400'));
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('border-indigo-400');
-      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-    imageInput.addEventListener('change', (e) => {
-      if (e.target.files.length) handleFile(e.target.files[0]);
-    });
-
-    // Handle uploaded file
-    function handleFile(file) {
-      if (!file.type.match('image/jpeg')) {
-        alert('المرجو اختيار صورة بصيغة JPG / JPEG');
-        return;
-      }
-
-      currentFileName = file.name;
-      const reader = new FileReader();
-
-      reader.onload = function(e) {
-        currentDataUrl = e.target.result;
-        imagePreview.src = currentDataUrl;
-
-        fileInfo.innerHTML = `
-          <p><strong>اسم الملف:</strong> ${file.name}</p>
-          <p><strong>الحجم:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
-        `;
-
-        try {
-          // Load EXIF from DataURL
-          currentExif = piexif.load(currentDataUrl);
-          populateFields(currentExif);
-        } catch (err) {
-          console.warn("ما لقيناش EXIF مسبق، غادي نكرييو واحد جديد:", err);
-          currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
-          clearInputs();
-        }
-
-        editorArea.classList.remove('hidden');
-        dropZone.classList.add('py-4');
-        showNotification("تم تحميل الصورة وبيانات الـ EXIF بنجاح!");
-      };
-
-      reader.readAsDataURL(file);
-    }
-
-    // Populate Inputs with parsed tags
-    function populateFields(exif) {
-      clearInputs();
-      if (!exif) return;
-
-      const zeroth = exif["0th"] || {};
-      const exifSub = exif["Exif"] || {};
-
-      if (zeroth[piexif.ImageIFD.Artist]) artistInput.value = zeroth[piexif.ImageIFD.Artist];
-      if (zeroth[piexif.ImageIFD.Copyright]) copyrightInput.value = zeroth[piexif.ImageIFD.Copyright];
-      if (zeroth[piexif.ImageIFD.Make]) makeInput.value = zeroth[piexif.ImageIFD.Make];
-      if (zeroth[piexif.ImageIFD.Model]) modelInput.value = zeroth[piexif.ImageIFD.Model];
-      if (zeroth[piexif.ImageIFD.Software]) softwareInput.value = zeroth[piexif.ImageIFD.Software];
-      if (zeroth[piexif.ImageIFD.ImageDescription]) descInput.value = zeroth[piexif.ImageIFD.ImageDescription];
-
-      if (exifSub[piexif.ExifIFD.DateTimeOriginal]) {
-        dateInput.value = exifSub[piexif.ExifIFD.DateTimeOriginal];
-      }
-    }
-
-    function clearInputs() {
-      artistInput.value = '';
-      copyrightInput.value = '';
-      makeInput.value = '';
-      modelInput.value = '';
-      softwareInput.value = '';
-      dateInput.value = '';
-      descInput.value = '';
-    }
-
-    // Save & Download with modified EXIF
-    saveBtn.addEventListener('click', () => {
-      if (!currentDataUrl) return;
-
-      try {
-        if (!currentExif) {
-          currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
-        }
-        if (!currentExif["0th"]) currentExif["0th"] = {};
-        if (!currentExif["Exif"]) currentExif["Exif"] = {};
-
-        // Assign user inputs to EXIF tags
-        if (artistInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Artist] = artistInput.value.trim();
-        if (copyrightInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Copyright] = copyrightInput.value.trim();
-        if (makeInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Make] = makeInput.value.trim();
-        if (modelInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Model] = modelInput.value.trim();
-        if (softwareInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Software] = softwareInput.value.trim();
-        if (descInput.value.trim()) currentExif["0th"][piexif.ImageIFD.ImageDescription] = descInput.value.trim();
-
-        if (dateInput.value.trim()) {
-          currentExif["Exif"][piexif.ExifIFD.DateTimeOriginal] = dateInput.value.trim();
-        }
-
-        // Dump & inject into Data URL
-        const exifBytes = piexif.dump(currentExif);
-        const newImageDataUrl = piexif.insert(exifBytes, currentDataUrl);
-
-        downloadImage(newImageDataUrl, `modified_${currentFileName}`);
-        showNotification("تم حفظ الميتاداتا وتنزيل الصورة بنجاح!");
-      } catch (err) {
-        console.error(err);
-        alert("حدث خطأ أثناء كتابة بيانات EXIF: " + err.message);
-      }
-    });
-
-    // Strip EXIF completely
-    stripBtn.addEventListener('click', () => {
-      if (!currentDataUrl) return;
-
-      try {
-        const cleanedDataUrl = piexif.remove(currentDataUrl);
-        currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
-        clearInputs();
-        
-        downloadImage(cleanedDataUrl, `clean_${currentFileName}`);
-        showNotification("تم مسح جميع بيانات EXIF وتنزيل الصورة نظيفة تماماً!");
-      } catch (err) {
-        console.error(err);
-        alert("وقع خطأ أثناء مسح البيانات: " + err.message);
-      }
-    });
-
-    // Trigger download
-    function downloadImage(dataUrl, filename) {
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  </script>
-</body>
-</html>
-      }
-
-      /* إعدادات اللوغو (التصويرة) */
-      .nav-logo {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-      }
-
-      .nav-logo img {
-        max-height: 40px; /* هاد الرقم كيتحكم فكُبر اللوغو، تقدر تزيد ولا تنقص فيه */
-        width: auto;
-        object-fit: contain;
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 25px;
-        /* حيدنا row-reverse باش المتصفح يقراهم طبيعي بالعربية (من اليمين لليسار) */
-        flex-direction: row; 
-      }
-
-      .nav-links a {
-        text-decoration: none;
-        color: var(--blue-medium);
-        font-weight: 700;
-        font-size: 1rem;
-        transition: var(--transition);
-        cursor: pointer;
-      }
-
-      .nav-links a:hover {
-        color: var(--blue-vibrant);
-      }
-
-      .nav-cta {
-        background-color: var(--blue-vibrant);
-        color: var(--color-white);
-        padding: 8px 20px;
-        border-radius: 6px;
-        text-decoration: none;
-        font-weight: 700;
-        transition: var(--transition);
-        cursor: pointer;
-      }
-
-      .nav-cta:hover {
-        background-color: var(--blue-standard);
-        transform: translateY(-2px);
-      }
-
-      @media (max-width: 768px) {
-        .nav-links {
-          display: none;
-        }
-        .nav-logo img {
-          max-height: 35px; /* اللوغو كيصغار شوية فالتليفون */
-        }
-      }
-
-      /* ================= ألوان الهوية البصرية (Charte Graphique) ================= */
-      :root {
-        /* تدرجات الأزرق */
-        --blue-vibrant: #0094d9;
-        --blue-medium: #16498c;
-        --blue-standard: #1875bb;
-        --blue-dark: #0b3f59;
-
-        /* تدرجات الأخضر الليموني */
-        --lime-light: #dcfe11;
-        --lime-primary: #ccfa04;
-        --lime-dark: #b4dc02;
-
-        /* ألوان محايدة للقراءة والتنسيق */
-        --color-white: #ffffff;
-        --color-bg-light: #f4f7f9;
-        --color-border: #e2e8f0;
-        
-        /* تعيين الأدوار */
-        --color-text-main: var(--blue-dark);
-        --color-text-muted: #556b7a;
-        --shadow-sm: 0 2px 4px rgba(11, 63, 89, 0.05);
-        --shadow-md: 0 10px 25px rgba(11, 63, 89, 0.1);
-        --transition: all 0.3s ease;
-      }
-
-      /* ================= الإعدادات العامة ================= */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: 'Cairo', sans-serif;
-        color: var(--color-text-main);
-        background-color: var(--color-white);
-        line-height: 1.6;
-        overflow-x: hidden;
-      }
-
-      .shell {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-
-      .fade-in {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 0.8s ease, transform 0.8s ease;
-      }
-      .fade-in.visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
-      /* ================= قسم البداية (Hero) ================= */
-      .hero {
-        background: radial-gradient(circle at top center, rgba(0, 148, 217, 0.05) 0%, transparent 70%);
-        padding: 80px 0 60px;
-        text-align: center;
-        border-bottom: 1px solid var(--color-border);
-      }
-
-      .hero-copy {
-        max-width: 800px;
-        margin: 0 auto;
-      }
-
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background-color: rgba(204, 250, 4, 0.2); /* lime مع شفافية */
-        color: var(--blue-dark);
-        padding: 6px 16px;
-        border-radius: 50px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        margin-bottom: 24px;
-        border: 1px solid var(--lime-primary);
-      }
-
-      .badge__dot {
-        width: 8px;
-        height: 8px;
-        background-color: var(--blue-vibrant);
-        border-radius: 50%;
-      }
-
-      .hero-title {
-        font-size: clamp(2rem, 5vw, 3.5rem);
-        font-weight: 800;
-        color: var(--blue-dark);
-        line-height: 1.2;
-        margin-bottom: 20px;
-      }
-
-      .hero-title__accent {
-        color: var(--blue-vibrant);
-        position: relative;
-        display: inline-block;
-      }
-      
-      /* خط سفلي تحت الكلمة المميزة */
-      .hero-title__accent::after {
-        content: "";
-        position: absolute;
-        bottom: 5px;
-        left: 0;
-        width: 100%;
-        height: 8px;
-        background-color: var(--lime-primary);
-        z-index: -1;
-        border-radius: 4px;
-      }
-
-      .hero-subtitle {
-        font-size: clamp(1rem, 2vw, 1.25rem);
-        color: var(--color-text-muted);
-        margin-bottom: 40px;
-      }
-
-      .hero-actions {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
-      }
-
-      .hero-cta {
-        display: inline-block;
-        background-color: var(--lime-primary);
-        color: var(--blue-dark);
-        text-decoration: none;
-        padding: 16px 40px;
-        font-size: 1.1rem;
-        font-weight: 800;
-        border-radius: 8px;
-        transition: var(--transition);
-        box-shadow: 0 4px 15px rgba(204, 250, 4, 0.4);
-      }
-
-      .hero-cta:hover {
-        background-color: var(--lime-light);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(204, 250, 4, 0.6);
-      }
-
-      .hero-microcopy {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.9rem;
-        color: var(--color-text-muted);
-      }
-
-      .hero-microcopy__icon {
-        width: 18px;
-        height: 18px;
-      }
-
-      .hero-divider {
-        margin: 60px 0 40px;
-        height: 1px;
-        background: linear-gradient(to right, transparent, var(--color-border), transparent);
-      }
-
-/* الإحصائيات */
-      .hero-stats {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap; /* كنخليوها باش فالتليفون يقدرو يهبطو */
-        gap: 20px; /* نقصنا الفراغ بيناتهم شوية */
-        width: 100%;
-      }
-
-      .stat-card {
-        background: var(--color-white);
-        padding: 20px 15px; /* نقصنا من الحجم الداخلي باش يقدّهم السطر */
-        border-radius: 12px;
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--color-border);
-        flex: 1; /* هاد الخاصية هي لي كتخليهم يتمددو بالتساوي فخط واحد */
-        min-width: 130px; /* صغرنا الحد الأدنى باش يقدرو يجيو بـ 4 فسطر واحد */
-        max-width: 220px; /* باش مايعراضوش بزاف فالشاشات الكبيرة */
-        transition: var(--transition);
-        border-bottom: 3px solid transparent;
-      }
-
-      .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: var(--shadow-md);
-        border-bottom: 3px solid var(--blue-vibrant);
-      }
-
-      .stat-card__value {
-        font-size: 1.8rem; /* صغرنا الخط ديال الرقم شوية باش يجي متناسق */
-        font-weight: 800;
-        color: var(--blue-standard);
-      }
-
-      .stat-card__label {
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-        font-weight: 600;
-      }
-
-
-      /* ================= الأقسام العامة (Sections) ================= */
-      .section {
-        padding: 80px 0;
-      }
-
-      .section__header {
-        text-align: center;
-        margin-bottom: 50px;
-        max-width: 700px;
-        margin-inline: auto;
-      }
-
-      .section__eyebrow {
-        color: var(--blue-standard);
-        font-weight: 700;
-        margin-bottom: 10px;
-        font-size: 1rem;
-        background: rgba(24, 117, 187, 0.1);
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-      }
-
-      .section__title {
-        font-size: 2.2rem;
-        color: var(--blue-dark);
-        font-weight: 800;
-        margin-bottom: 15px;
-      }
-
-      .section__subtitle {
-        color: var(--color-text-muted);
-        font-size: 1.1rem;
-      }
-
-      /* ================= قسم المميزات (Features) ================= */
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 30px;
-      }
-
-      .feature-card {
-        background: var(--color-bg-light);
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: var(--shadow-sm);
-        border: 1px solid var(--color-border);
-        transition: var(--transition);
-      }
-
-      .feature-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-5px);
-        background: var(--color-white);
-        border-color: var(--blue-vibrant);
-      }
-
-      .feature-card__icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 50px;
-        height: 50px;
-        background-color: var(--blue-dark);
-        color: var(--lime-primary);
-        border-radius: 10px;
-        margin-bottom: 20px;
-        transition: var(--transition);
-      }
-
-      .feature-card:hover .feature-card__icon {
-        background-color: var(--blue-vibrant);
-        color: var(--color-white);
-      }
-
-      .feature-card__icon svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
-      }
-
-      .feature-card__title {
-        font-size: 1.25rem;
-        color: var(--blue-medium);
-        margin-bottom: 10px;
-        font-weight: 700;
-      }
-
-      .feature-card__text {
-        color: var(--color-text-muted);
-        font-size: 0.95rem;
-      }
-
-      /* ================= قسم الإثبات الاجتماعي (Social Proof) ================= */
-      .proof-panel {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 40px;
-        align-items: center;
-      }
-
-      .proof-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      .proof-stat {
-        background: var(--blue-medium);
-        color: var(--color-white);
-        padding: 24px;
-        border-radius: 12px;
-        border-right: 5px solid var(--lime-primary);
-      }
-
-      .proof-stat__value {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: var(--lime-primary);
-        margin-bottom: 5px;
-      }
-
-      .proof-testimonials {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-      }
-
-      .proof-card {
-        background: var(--color-bg-light);
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid var(--color-border);
-        position: relative;
-      }
-
-      .proof-card::before {
-        content: '"';
-        position: absolute;
-        top: 10px;
-        right: 20px;
-        font-size: 4rem;
-        color: var(--blue-vibrant);
-        opacity: 0.2;
-        font-family: serif;
-      }
-
-      .proof-card__quote {
-        color: var(--blue-dark);
-        font-weight: 600;
-        font-style: italic;
-        margin-bottom: 20px;
-        position: relative;
-        z-index: 1;
-      }
-
-      .proof-card__name {
-        font-weight: 800;
-        color: var(--blue-medium);
-      }
-
-      .proof-card__role {
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-      }
-
-/* تنسيق الجزء الخاص بصاحب التقييم (التصويرة + المعلومات) */
-      .proof-card__author {
-        display: flex;
-        align-items: center; /* باش يجيو مقادين فسطر واحد */
-        gap: 15px; /* المسافة بين التصويرة والكتيبة */
-        margin-top: 20px;
-        padding-top: 15px;
-        border-top: 1px dashed var(--color-border); /* خط خفيف كيفصل القولة على الشخص */
-      }
-
-      /* تنسيق التصويرة الدائرية */
-      .proof-card__avatar {
-        width: 55px;
-        height: 55px;
-        border-radius: 50%; /* باش تولي ضايرة */
-        object-fit: cover; /* باش التصويرة ماتعواجش */
-        border: 2px solid var(--lime-primary); /* إطار بلون اللوغو الأخضر باش يعطي جمالية */
-        box-shadow: var(--shadow-sm);
-      }
-
-      .proof-card__meta {
-        display: flex;
-        flex-direction: column;
-      }
-
-
-      /* ================= قسم الأسئلة الشائعة (FAQ) ================= */
-      .faq-list {
-        max-width: 800px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .faq-item {
-        background: var(--color-white);
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-        overflow: hidden;
-      }
-
-      .faq-item summary {
-        padding: 20px;
-        font-weight: 700;
-        color: var(--blue-dark);
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        list-style: none;
-        transition: var(--transition);
-      }
-
-      .faq-item summary::-webkit-details-marker {
-        display: none;
-      }
-
-      .faq-item summary:hover {
-        background-color: var(--color-bg-light);
-        color: var(--blue-vibrant);
-      }
-
-      .faq-item__icon {
-        font-size: 1.5rem;
-        color: var(--blue-standard);
-        transition: var(--transition);
-        background: rgba(24, 117, 187, 0.1);
-        width: 30px; height: 30px;
-        display: flex; align-items: center; justify-content: center;
-        border-radius: 50%;
-      }
-
-      .faq-item[open] .faq-item__icon {
-        transform: rotate(45deg);
-        background: var(--lime-primary);
-        color: var(--blue-dark);
-      }
-
-      .faq-item__content {
-        padding: 0 20px 20px;
-        color: var(--color-text-muted);
-        border-top: 1px solid var(--color-border);
-        margin-top: 10px;
-        padding-top: 20px;
-      }
-
-      /* ================= الإجراء النهائي (Final CTA) ================= */
-      .final-cta-box {
-        background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-medium) 100%);
-        padding: 60px 40px;
-        border-radius: 24px;
-        text-align: center;
-        box-shadow: 0 20px 40px rgba(11, 63, 89, 0.15);
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 40px;
-      }
-
-      /* زخرفة خفيفة فالخلفية ديال الصندوق */
-      .final-cta-box::before {
-        content: '';
-        position: absolute;
-        top: -50px; left: -50px;
-        width: 150px; height: 150px;
-        background: radial-gradient(circle, rgba(204, 250, 4, 0.1) 0%, transparent 70%);
-        border-radius: 50%;
-      }
-
-      .final-cta__title {
-        color: var(--color-white);
-        font-size: 2.2rem;
-        font-weight: 800;
-        margin-bottom: 15px;
-        position: relative;
-        z-index: 1;
-      }
-
-      .final-cta__subtitle {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.1rem;
-        max-width: 600px;
-        margin: 0 auto 30px;
-        position: relative;
-        z-index: 1;
-      }
-
-      .final-cta__actions {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 12px;
-        position: relative;
-        z-index: 1;
-      }
-
-      .final-cta__microcopy {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 0.85rem;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-      }
-
-      .final-cta__microcopy svg {
-        color: var(--lime-primary);
-      }
-
-      /* ================= الفوتر (Footer) ================= */
-     
-
-      /* تأكد بلي هاد السطر كاين في أول ملف CSS باش يخدم الفونت */
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
-
-.main-footer {
-    background-color: #ffffff; /* لون الخلفية بيضاء كيف الصورة */
-    padding: 50px 20px;
-    text-align: center;
-    direction: rtl;
-    /* هاد السطر هو المهم باش الفونت يتبدل */
-    font-family: 'Cairo', sans-serif; 
-}
-
-.footer-logo img {
-    max-width: 180px;
-    margin-bottom: 25px;
-}
-
-.footer-description {
-    font-size: 16px;
-    color: #555;
-    line-height: 1.8;
-    max-width: 800px;
-    margin: 0 auto 30px auto;
-    /* تطبيق الفونت هنا أيضا */
-    font-family: 'Cairo', sans-serif;
-}
-
-.footer-links h3 {
-    color: #004a6e;
-    font-size: 22px;
-    font-weight: 700; /* باش يجي غليظ بحال العناوين لي لفوق */
-    margin-bottom: 15px;
-}
-
-.footer-links ul {
-    list-style: none;
-    padding: 0;
-}
-
-.footer-links ul li a {
-    text-decoration: none;
-    color: #3b82f6; /* لون أزرق بحال اللي في الصورة */
-    font-size: 18px;
-    transition: 0.3s;
-}
-
-.footer-links ul li a:hover {
-    text-decoration: underline;
-}
-
-      /* ================= التجاوب مع الشاشات (Responsive) ================= */
-      @media (max-width: 992px) {
-        .proof-panel { grid-template-columns: 1fr; }
-        .proof-stats { flex-direction: row; flex-wrap: wrap; }
-        .proof-stat { flex: 1; min-width: 200px; }
-      }
-
-      @media (max-width: 768px) {
-        .hero { padding: 60px 0 40px; }
-        .section { padding: 50px 0; }
-        .section__title { font-size: 1.8rem; }
-        .hero-stats { gap: 15px; }
-        .stat-card { min-width: 140px; padding: 15px; }
-      }
-
-      .final-cta-box {
-          padding: 40px 20px;
-        }
-        .final-cta__title {
-          font-size: 1.6rem;
-        }
-        .footer-grid {
-          grid-template-columns: 1fr; /* الفوتر كيولي عمودي فالتليفون */
-          gap: 30px;
-          text-align: center; /* كلشي كيرجع للوسط */
-        }
-        .brand-info {
-          padding-left: 0;
-        }
-        .footer-logo {
-          justify-content: center;
-        }
-        .footer-links a:hover {
-          padding-right: 0; /* كنحيدو ديك الحركة فالتليفون */
-        }
-
-
-/* ================= الأزرار في الهيرو ================= */
-      .hero-buttons-wrapper {
-        display: flex;
-        gap: 15px;
-        align-items: center;
-        justify-content: center;
-        flex-wrap: wrap; /* باش فالتليفون يهبطو تحت بعضياتهم */
-      }
-
-      .hero-cta-secondary {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background-color: var(--color-white);
-        color: var(--blue-dark);
-        border: 2px solid var(--blue-dark);
-        text-decoration: none;
-        padding: 14px 30px;
-        font-size: 1.1rem;
-        font-weight: 800;
-        border-radius: 8px;
-        transition: var(--transition);
-      }
-
-      .hero-cta-secondary:hover {
-        background-color: var(--blue-dark);
-        color: var(--color-white);
-        transform: translateY(-3px);
-      }
-
-      /* ================= قسم الفيديو ================= */
-      .video-thumbnail-container {
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
-        aspect-ratio: 16 / 9; /* باش يبقى ديما بحال شاشة التلفزة */
-        background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-medium) 100%);
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: var(--shadow-md);
-        transition: var(--transition);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .video-thumbnail-container:hover {
-        transform: scale(1.02);
-        box-shadow: 0 15px 35px rgba(11, 63, 89, 0.2);
-      }
-
-      .play-btn-circle {
-        width: 80px;
-        height: 80px;
-        background-color: var(--color-white);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--blue-dark);
-        transition: var(--transition);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
-        animation: pulse-play 2s infinite;
-      }
-
-      .play-btn-circle svg {
-        width: 35px;
-        height: 35px;
-        fill: currentColor;
-        margin-left: 5px; /* باش يجي المثلث فالوسط نيشان */
-      }
-
-      .video-thumbnail-container:hover .play-btn-circle {
-        transform: scale(1.1);
-        color: var(--blue-vibrant);
-        animation: none;
-      }
-
-      @keyframes pulse-play {
-        0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6); }
-        70% { box-shadow: 0 0 0 20px rgba(255, 255, 255, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-      }
-
-      /* ================= النافذة المنبثقة (Modal) ================= */
-      .modal-overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-color: rgba(11, 63, 89, 0.9); /* خلفية ضبابية زرقاء غامقة */
-        backdrop-filter: blur(5px);
-        z-index: 9999;
-        display: none; /* مخفي فالبداية */
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .modal-overlay.active {
-        display: flex;
-        opacity: 1;
-      }
-
-      .modal-content {
-        width: 90%;
-        max-width: 1000px;
-        position: relative;
-        background: #000;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        transform: translateY(20px);
-        transition: transform 0.3s ease;
-      }
-
-      .modal-overlay.active .modal-content {
-        transform: translateY(0);
-      }
-
-      .close-modal-btn {
-        position: absolute;
-        top: -40px; right: 0;
-        background: none; border: none;
-        color: var(--color-white);
-        font-size: 2.5rem;
-        cursor: pointer;
-        transition: color 0.3s;
-      }
-
-      .close-modal-btn:hover {
-        color: var(--lime-primary);
-      }
-
-      .iframe-wrapper {
-        position: relative;
-        padding-bottom: 56.25%; /* 16:9 ratio */
-        height: 0;
-      }
-
-      .iframe-wrapper iframe {
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-      }
-    </style>
-  </head>
-  <body>
-
-<!-- البار الفوقانية (Navbar) -->
-    <header class="navbar">
-      <div class="shell nav-container">
-        <!-- اللوغو (تصويرة) -->
-        <!-- ملي كيكليكي عليه كيرجعو للفوق -->
-        <a href="#hero" class="nav-logo">
-          <img src="https://i.postimg.cc/hP92qWGT/Logo-Officiel.png" alt="CoinCarrière Logo">
-        </a>
-        
-        <!-- الروابط -->
-        <nav class="nav-links">
-          <a href="#hero">الرئيسية</a>
-          <a href="#features">المميزات</a>
-          <a href="#proof">آراء العملاء</a>
-          <a href="#faq">الأسئلة الشائعة</a>
-        </nav>
-        
-        <!-- زر التسجيل -->
-        <a href="https://coincarriere.com/register?type=company" class="nav-cta" target="_blank">سجل شركتك</a>
-        
-      </div>
-    </header>
-
-    <main class="page">
-      <div class="shell">
-        
-        <!-- قسم الهيرو -->
-        <section id="hero" class="hero fade-in" aria-labelledby="coincarriere-hero-title">
-          <div class="hero-copy">
-            <div class="badge">
-              <span class="badge__dot" aria-hidden="true"></span>
-              <span>المنصة الأولى للتوظيف في قطاع الفنادق</span>
-            </div>
-
-            <h1 id="coincarriere-hero-title" class="hero-title">
-              استقطب أفضل مرشحين <span class="hero-title__accent">للفندق</span> من مكان واحد
-            </h1>
-
-            <p class="hero-subtitle">
-              CoinCarrière تساعدك على نشر الوظائف، فرز المرشحين، ومتابعة الطلبات داخل تجربة
-              عربية واضحة، سريعة، ومصممة لفِرق التوظيف في الضيافة.
-            </p>
-
-
-             <div class="hero-actions">
-              <div class="hero-buttons-wrapper">
-                <a class="hero-cta" href="https://coincarriere.com/register?type=company" target="_blank" rel="noopener noreferrer">
-                  ابدأ التوظيف الآن — مجاناً
-                </a>
-                <!-- الزر الجديد لي كيدي للفيديو -->
-                <a class="hero-cta-secondary" href="#how-it-works">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                  كيف تعمل المنصة؟
-                </a>
-              </div>
-
-              <div class="hero-microcopy">
-                <svg class="hero-microcopy__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="10" cy="10" r="9" fill="#1875bb" />
-                  <path d="M6.5 10.2L8.7 12.4L13.6 7.4" stroke="#ffffff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span>بدون رسوم خفية، وببدء سريع خلال دقائق قليلة</span>
-              </div>
-            </div>
-            <div class="hero-divider" aria-hidden="true"></div>
-
-            <div class="hero-stats" aria-label="إحصاءات المنصة">
-              <article class="stat-card">
-                <p class="stat-card__value">-70%</p>
-                <p class="stat-card__label">تقليل وقت الفرز</p>
-              </article>
-              <article class="stat-card">
-                <p class="stat-card__value">+500</p>
-                <p class="stat-card__label">مرشح مؤهل</p>
-              </article>
-              <article class="stat-card">
-                <p class="stat-card__value">48س</p>
-                <p class="stat-card__label">زمن أسرع للوصول</p>
-              </article>
-              <article class="stat-card">
-                <p class="stat-card__value">98%</p>
-                <p class="stat-card__label">رضا فرق التوظيف</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <!-- قسم المميزات -->
-        <section id="features" class="section fade-in" aria-labelledby="features-title">
-          <header class="section__header">
-            <p class="section__eyebrow">المميزات الأساسية</p>
-            <h2 id="features-title" class="section__title">
-              كل ما تحتاجه للتوظيف في مكان واحد 
-            </h2>
-            <p class="section__subtitle">
-              صممت CoinCarrière لتبسيط رحلة التوظيف من لحظة نشر الإعلان إلى اختيار المرشح المناسب.
-            </p>
-          </header>
-
-          <div class="features-grid">
-            <article class="feature-card">
-              <span class="feature-card__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              </span>
-              <h3 class="feature-card__title">استقبال الطلبات في مكان واحد</h3>
-              <p class="feature-card__text">
-                اجمع جميع الترشيحات في لوحة منظمة تسهّل المتابعة وتمنع ضياع السِيَر الذاتية بين القنوات المختلفة.
-              </p>
-            </article>
-
-            <article class="feature-card">
-              <span class="feature-card__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
-              </span>
-              <h3 class="feature-card__title">فلترة أسرع حسب المتطلبات</h3>
-              <p class="feature-card__text">
-                قارن المرشحين بحسب الخبرة، الموقع، التوفر، والمهارات التي تبحث عنها فرق الفنادق بشكل يومي.
-              </p>
-            </article>
-
-            <article class="feature-card">
-              <span class="feature-card__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
-              </span>
-              <h3 class="feature-card__title">تواصل مباشر وواضح</h3>
-              <p class="feature-card__text">
-                تواصل مع المرشحين بسرعة، وابدأ خطوات المقابلة والمتابعة دون تعقيد أو تأخير غير ضروري.
-              </p>
-            </article>
-
-            <article class="feature-card">
-              <span class="feature-card__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-              </span>
-              <h3 class="feature-card__title">متابعة دقيقة لسير العملية</h3>
-              <p class="feature-card__text">
-                راقب حالة كل طلب بسهولة، من الوصول الأولي إلى اتخاذ القرار النهائي داخل واجهة واحدة بسيطة.
-              </p>
-            </article>
-          </div>
-        </section>
-
-        <!-- قسم الإثبات الاجتماعي -->
-        <section id="proof" class="section fade-in" aria-labelledby="proof-title">
-          <header class="section__header">
-            <p class="section__eyebrow">إثبات اجتماعي</p>
-            <h2 id="proof-title" class="section__title">
-              موثوق من فرق التوظيف في قطاع الضيافة
-            </h2>
-            <p class="section__subtitle">
-              تعتمد فرق الموارد البشرية على CoinCarrière لتسريع الوصول إلى المرشحين.
-            </p>
-          </header>
-
-          <div class="proof-panel">
-            <div class="proof-stats" aria-label="مؤشرات الثقة">
-              <article class="proof-stat">
-                <p class="proof-stat__value">120+ منشأة</p>
-                <p class="proof-stat__label">اعتمدت الواجهة لتسهيل التوظيف</p>
-              </article>
-              <article class="proof-stat">
-                <p class="proof-stat__value">3 أيام أسرع</p>
-                <p class="proof-stat__label">في الوصول إلى قائمة المرشحين</p>
-              </article>
-            </div>
-
-         <div class="proof-testimonials">
-              
-              <!-- البطاقة الأولى -->
-              <article class="proof-card">
-                <p class="proof-card__quote">
-                  "أصبحنا نصل إلى المرشحين المناسبين خلال وقت أقصر، مع تنظيم أوضح لكل مرحلة من مراحل التوظيف."
-                </p>
-                <div class="proof-card__author">
-                  <!-- رابط التصويرة هنا -->
-                  <img src="https://i.postimg.cc/PqK9ZLvk/Coin-Carriere-RH1.png" alt="صورة العميل" class="proof-card__avatar">
-                  <div class="proof-card__meta">
-                    <p class="proof-card__name">مديرة الموارد البشرية</p>
-                    <p class="proof-card__role">سلسلة فنادق 4 نجوم</p>
-                  </div>
-                </div>
-              </article>
-
-              <!-- البطاقة الثانية -->
-              <article class="proof-card">
-                <p class="proof-card__quote">
-                  "التجربة بسيطة ومباشرة، وهذا ما احتجناه فعلًا لفريق يتعامل مع طلبات توظيف متعددة يوميًا."
-                </p>
-                <div class="proof-card__author">
-                  <!-- رابط التصويرة هنا -->
-                  <img src="https://i.postimg.cc/t4b9NxJb/Coin-Carriere-RH2.png" alt="صورة العميل" class="proof-card__avatar">
-                  <div class="proof-card__meta">
-                    <p class="proof-card__name">مسؤول التوظيف</p>
-                    <p class="proof-card__role">فندق أعمال في منطقة حضرية</p>
-                  </div>
-                </div>
-              </article>
-            </div>
-        </section>
-
-
-<!-- قسم الفيديو التعريفي -->
-        <section id="how-it-works" class="section fade-in" aria-labelledby="video-title">
-          <header class="section__header">
-            <h2 id="video-title" class="section__title">شوف كيفاش كتخدم المنصة ف 90 ثانية</h2>
-            <p class="section__subtitle" style="max-width: 800px; margin: 0 auto;">
-              فيديو قصير كيوريك المسار الكامل: من تسجيل الفندق، تحديد المنصب، استقبال البروفيلات، حتى توقيع العقد مع الموظف الجديد.
-            </p>
-          </header>
-
-          <div class="video-thumbnail-container" id="openVideoModal">
-            <!-- أيقونة التشغيل (Play Button) -->
-            <div class="play-btn-circle">
-              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </div>
-          </div>
-        </section>
-
-        <!-- نافذة عرض الفيديو (Popup) -->
-        <div id="videoModal" class="modal-overlay">
-          <div class="modal-content">
-            <button class="close-modal-btn" id="closeVideoModal">&times;</button>
-            <div class="iframe-wrapper">
-            <div class="iframe-wrapper">
-              <iframe 
-                id="videoIframe" 
-                src="https://www.youtube.com/embed/uK-yrqvFtvw" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen>
-              </iframe>
-            </div>
-             
-            </div>
-          </div>
-        </div>
-
-
-
-        <!-- قسم الأسئلة الشائعة -->
-        <section id="faq"  class="section fade-in" aria-labelledby="faq-title">
-          <header class="section__header">
-            <p class="section__eyebrow">الأسئلة الشائعة</p>
-            <h2 id="faq-title" class="section__title">إجابات سريعة لمساعدتك</h2>
-          </header>
-
-          <div class="faq-list">
-            <details class="faq-item">
-              <summary>
-                <span>هل يمكنني البدء مجاناً؟</span>
-                <span class="faq-item__icon" aria-hidden="true">+</span>
-              </summary>
-              <div class="faq-item__content">
-                نعم، يمكنك البدء مجاناً عبر إنشاء حساب شركة والاطلاع على تجربة التوظيف قبل اتخاذ أي خطوة إضافية.
-              </div>
-            </details>
-
-            <details class="faq-item">
-              <summary>
-                <span>هل المنصة مناسبة للفنادق الصغيرة والكبيرة؟</span>
-                <span class="faq-item__icon" aria-hidden="true">+</span>
-              </summary>
-              <div class="faq-item__content">
-                نعم، صممت لتناسب فرق التوظيف الصغيرة وكذلك المؤسسات الأكبر التي تدير عدة وظائف وفروع في الوقت نفسه.
-              </div>
-            </details>
-
-            <details class="faq-item">
-              <summary>
-                <span>كم يستغرق نشر أول إعلان وظيفة؟</span>
-                <span class="faq-item__icon" aria-hidden="true">+</span>
-              </summary>
-              <div class="faq-item__content">
-                عادةً لا يحتاج الأمر سوى دقائق قليلة بعد تسجيل الحساب وإدخال تفاصيل الوظيفة والمتطلبات الأساسية.
-              </div>
-            </details>
-          </div>
-        </section>
-    
-        
-        <!-- ================= قسم الإجراء النهائي (Final CTA) ================= -->
-        <section class="section fade-in">
-          <div class="final-cta-box">
-            <h2 class="final-cta__title">مستعد لبناء فريق أحلامك الفندقي؟</h2>
-            <p class="final-cta__subtitle">
-              انضم لأكثر من 120 منشأة سياحية تعتمد على CoinCarrière لتسريع عملية التوظيف وخفض التكاليف.
-            </p>
-            
-            <div class="final-cta__actions">
-              <a class="hero-cta" href="https://coincarriere.com/register?type=company" target="_blank" rel="noopener noreferrer">
-                سجل شركتك الآن — مجاناً
-              </a>
-              <span class="final-cta__microcopy">
-                <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm-1 11.41l-3.7-3.71 1.41-1.42L9 10.59l4.29-4.3 1.42 1.42L9 13.41z"/></svg>
-                لا يتطلب بطاقة ائتمان
-              </span>
-            </div>
-          </div>
-        </section>
-
-      </div> <!-- تسدات الديف ديال shell -->
-    </main>
-
-    <!-- ================= الفوتر (Footer) ================= -->
-
-<footer class="main-footer">
-    <div class="footer-container">
-        
-        <!-- بلاصت اللوجو -->
-        <div class="footer-logo">
-            <img src="https://i.postimg.cc/hP92qWGT/Logo-Officiel.png" alt="CoinCarrière Logo"> 
-            <!-- ملاحظة: بدّل images/logo.png بالمسار ديال اللوجو ديالك -->
-        </div>
-
-        <!-- الوصف -->
-        <p class="footer-description">
-            المنصة الأولى المتخصصة في ربط الفنادق والمنشآت السياحية بأفضل الكفاءات المهنية المؤهلة في أسرع وقت.
-        </p>
-
-        <!-- روابط التواصل -->
-        <div class="footer-links">
-            <h3>تواصل معنا</h3>
-            <ul>
-                <li><a href="https://coincarriere.com/fr/contact">راسلنا</a></li>
-                <li><a href="https://coincarriere.com/register?type=company">تسجيل الدخول للمنشآت</a></li>
-            </ul>
-        </div>
-    </div>
-  
-    <!-- حقوق النشر (اختياري) -->
-    <div class="footer-bottom">
-         <p>© 2024 CoinCarrière. جميع الحقوق محفوظة.</p>
-    </div>
-</footer>
-
-    <!-- سكربت لتشغيل تأثيرات الظهور (Animations) -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const observerOptions = {
-          root: null,
-          rootMargin: '0px',
-          threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries, observer) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('visible');
-              observer.unobserve(entry.target);
-            }
-          });
-        }, observerOptions);
-
-        document.querySelectorAll('.fade-in').forEach(section => {
-          observer.observe(section);
-        });
-      });
-    </script>
-<script>
-// تأثير الضل للـ Navbar ملي الزائر كيهبط بالصفحة
-      const navbar = document.querySelector('.navbar');
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 10) {
-          navbar.classList.add('scrolled');
-        } else {
-          navbar.classList.remove('scrolled');
-        }
-      });
-</script>
-<script>
-// ================= كود تشغيل الفيديو =================
-      const openVideoBtn = document.getElementById('openVideoModal');
-      const closeVideoBtn = document.getElementById('closeVideoModal');
-      const videoModal = document.getElementById('videoModal');
-      const videoIframe = document.getElementById('videoIframe');
-      
-      // حط الرابط ديال يوتيوب هنا (تأكد يكون فيه embed وفي اللخر ?autoplay=1)
-      const youtubeLink = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1";
-
-      // ملي نكليكيو على بلاصة الفيديو
-      openVideoBtn.addEventListener('click', () => {
-        videoModal.classList.add('active');
-        videoIframe.src = youtubeLink; // كنعطيو الرابط باش يبدا يخدم
-        document.body.style.overflow = 'hidden'; // كنحبسو السكرول ديال الصفحة
-      });
-
-      // دالة باش نسدو الفيديو
-      const closeModal = () => {
-        videoModal.classList.remove('active');
-        videoIframe.src = ""; // كنخويو الرابط باش الفيديو يحبس ميبقاش خدام فالخلفية
-        document.body.style.overflow = 'auto'; // كنرجعو السكرول
-      };
-
-      // نكليكيو على (X)
-      closeVideoBtn.addEventListener('click', closeModal);
-
-      // نكليكيو فاي بلاصة كحلة برا الفيديو
-      videoModal.addEventListener('click', (e) => {
-        if (e.target === videoModal) {
-          closeModal();
-        }
-      });
-      </script>
-  </body>
 </html>
