@@ -1,39 +1,306 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CoinCarrière — منصة التوظيف</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
-    
-    <style>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>محرر بيانات EXIF و Metadata للصور</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Piexifjs لتعديل وقراءة وحفظ EXIF -->
+  <script src="https://cdn.jsdelivr.net/npm/piexifjs@1.0.6/piexif.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+    body { font-family: 'Tajawal', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col items-center">
 
-/* ================= البار الفوقانية (Navbar) ================= */
-      .navbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background-color: var(--color-white);
-        z-index: 1000;
-        transition: var(--transition);
-        border-bottom: 1px solid var(--color-border);
+  <div class="w-full max-w-5xl">
+    <!-- Header -->
+    <header class="text-center mb-8">
+      <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+        محرر بيانات Metadata & EXIF
+      </h1>
+      <p class="text-slate-400 mt-2 text-sm md:text-base">
+        رفع أي صورة (JPG/JPEG)، عدّل بيانات الكاميرا، المؤلف، التاريخ، أو امسح الميتاداتا بنقرة واحدة.
+      </p>
+    </header>
+
+    <!-- Upload Zone -->
+    <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 transition-all rounded-2xl p-8 text-center cursor-pointer bg-slate-800/50 mb-8 backdrop-blur">
+      <input type="file" id="imageInput" accept="image/jpeg, image/jpg" class="hidden">
+      <div class="flex flex-col items-center justify-center pointer-events-none">
+        <svg class="w-14 h-14 text-indigo-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <span class="text-lg font-bold text-slate-200">جرّ الصورة هنا أو ضغط باش تختارها</span>
+        <span class="text-xs text-slate-400 mt-1">يدعم صيغ JPG / JPEG (الصيغ القياسية لـ EXIF)</span>
+      </div>
+    </div>
+
+    <!-- Editor Workspace (Hidden by default) -->
+    <div id="editorArea" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Preview Column -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        <div class="bg-slate-800 border border-slate-700/60 rounded-2xl p-4 shadow-xl">
+          <h2 class="text-sm font-semibold text-slate-300 mb-3">معاينة الصورة</h2>
+          <div class="w-full h-72 rounded-xl overflow-hidden bg-slate-950 flex items-center justify-center border border-slate-700/40">
+            <img id="imagePreview" src="" alt="Preview" class="max-h-full max-w-full object-contain">
+          </div>
+          <div id="fileInfo" class="mt-3 text-xs text-slate-400 space-y-1"></div>
+        </div>
+
+        <!-- Quick Actions -->
+        <button id="stripBtn" class="w-full py-3 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-600/40 rounded-xl font-medium transition duration-200 flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+          حذف جميع بيانات EXIF (Clean Metadata)
+        </button>
+      </div>
+
+      <!-- Form Column -->
+      <div class="lg:col-span-7 bg-slate-800 border border-slate-700/60 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-indigo-300 mb-4 border-b border-slate-700 pb-2">تعديل حقول الميتاداتا (EXIF Data)</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Artist / Author -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">المصوّر / الكاتب (Artist)</label>
+              <input type="text" id="artistInput" placeholder="Ayoub Benlhaj" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Copyright -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">حقوق النشر (Copyright)</label>
+              <input type="text" id="copyrightInput" placeholder="© 2026 All Rights Reserved" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Camera Make -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">صانع الكاميرا (Make)</label>
+              <input type="text" id="makeInput" placeholder="Sony, Canon, Apple..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Camera Model -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">موديل الكاميرا (Model)</label>
+              <input type="text" id="modelInput" placeholder="A7 IV, EOS R5, iPhone..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Software -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">البرنامج المستعمل (Software)</label>
+              <input type="text" id="softwareInput" placeholder="Adobe Photoshop, Lightroom..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none">
+            </div>
+
+            <!-- Date Taken -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">تاريخ ووقت الالتقاط (YYYY:MM:DD HH:MM:SS)</label>
+              <input type="text" id="dateInput" placeholder="2026:05:14 16:20:00" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none text-left" dir="ltr">
+            </div>
+
+            <!-- Image Description -->
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-slate-400 mb-1">وصف الصورة (Image Description)</label>
+              <textarea id="descInput" rows="2" placeholder="وصف محتوى الصورة أو الكلمات المفتاحية..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Buttons -->
+        <div class="mt-6 pt-4 border-t border-slate-700">
+          <button id="saveBtn" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/30 transition duration-200 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            تطبيق التعديلات وتحميل الصورة الجديدة
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-indigo-500/50 text-indigo-300 px-6 py-3 rounded-full text-sm font-medium shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none"></div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    const dropZone = document.getElementById('dropZone');
+    const imageInput = document.getElementById('imageInput');
+    const editorArea = document.getElementById('editorArea');
+    const imagePreview = document.getElementById('imagePreview');
+    const fileInfo = document.getElementById('fileInfo');
+
+    const artistInput = document.getElementById('artistInput');
+    const copyrightInput = document.getElementById('copyrightInput');
+    const makeInput = document.getElementById('makeInput');
+    const modelInput = document.getElementById('modelInput');
+    const softwareInput = document.getElementById('softwareInput');
+    const dateInput = document.getElementById('dateInput');
+    const descInput = document.getElementById('descInput');
+
+    const saveBtn = document.getElementById('saveBtn');
+    const stripBtn = document.getElementById('stripBtn');
+    const toast = document.getElementById('toast');
+
+    let currentDataUrl = '';
+    let currentFileName = 'image_modified.jpg';
+    let currentExif = null;
+
+    // Toast notification
+    function showNotification(msg) {
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 3000);
+    }
+
+    // Drag and Drop Events
+    dropZone.addEventListener('click', () => imageInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-indigo-400'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-indigo-400'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-400');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    imageInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleFile(e.target.files[0]);
+    });
+
+    // Handle uploaded file
+    function handleFile(file) {
+      if (!file.type.match('image/jpeg')) {
+        alert('المرجو اختيار صورة بصيغة JPG / JPEG');
+        return;
       }
 
-      .navbar.scrolled {
-        box-shadow: var(--shadow-md);
-        border-bottom: transparent;
-      }
+      currentFileName = file.name;
+      const reader = new FileReader();
 
-      .nav-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 70px;
-        /* هادي كتخلي اللوغو فاليسار والزر فاليمين */
-        flex-direction: row-reverse; 
+      reader.onload = function(e) {
+        currentDataUrl = e.target.result;
+        imagePreview.src = currentDataUrl;
+
+        fileInfo.innerHTML = `
+          <p><strong>اسم الملف:</strong> ${file.name}</p>
+          <p><strong>الحجم:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+        `;
+
+        try {
+          // Load EXIF from DataURL
+          currentExif = piexif.load(currentDataUrl);
+          populateFields(currentExif);
+        } catch (err) {
+          console.warn("ما لقيناش EXIF مسبق، غادي نكرييو واحد جديد:", err);
+          currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
+          clearInputs();
+        }
+
+        editorArea.classList.remove('hidden');
+        dropZone.classList.add('py-4');
+        showNotification("تم تحميل الصورة وبيانات الـ EXIF بنجاح!");
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // Populate Inputs with parsed tags
+    function populateFields(exif) {
+      clearInputs();
+      if (!exif) return;
+
+      const zeroth = exif["0th"] || {};
+      const exifSub = exif["Exif"] || {};
+
+      if (zeroth[piexif.ImageIFD.Artist]) artistInput.value = zeroth[piexif.ImageIFD.Artist];
+      if (zeroth[piexif.ImageIFD.Copyright]) copyrightInput.value = zeroth[piexif.ImageIFD.Copyright];
+      if (zeroth[piexif.ImageIFD.Make]) makeInput.value = zeroth[piexif.ImageIFD.Make];
+      if (zeroth[piexif.ImageIFD.Model]) modelInput.value = zeroth[piexif.ImageIFD.Model];
+      if (zeroth[piexif.ImageIFD.Software]) softwareInput.value = zeroth[piexif.ImageIFD.Software];
+      if (zeroth[piexif.ImageIFD.ImageDescription]) descInput.value = zeroth[piexif.ImageIFD.ImageDescription];
+
+      if (exifSub[piexif.ExifIFD.DateTimeOriginal]) {
+        dateInput.value = exifSub[piexif.ExifIFD.DateTimeOriginal];
+      }
+    }
+
+    function clearInputs() {
+      artistInput.value = '';
+      copyrightInput.value = '';
+      makeInput.value = '';
+      modelInput.value = '';
+      softwareInput.value = '';
+      dateInput.value = '';
+      descInput.value = '';
+    }
+
+    // Save & Download with modified EXIF
+    saveBtn.addEventListener('click', () => {
+      if (!currentDataUrl) return;
+
+      try {
+        if (!currentExif) {
+          currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
+        }
+        if (!currentExif["0th"]) currentExif["0th"] = {};
+        if (!currentExif["Exif"]) currentExif["Exif"] = {};
+
+        // Assign user inputs to EXIF tags
+        if (artistInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Artist] = artistInput.value.trim();
+        if (copyrightInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Copyright] = copyrightInput.value.trim();
+        if (makeInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Make] = makeInput.value.trim();
+        if (modelInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Model] = modelInput.value.trim();
+        if (softwareInput.value.trim()) currentExif["0th"][piexif.ImageIFD.Software] = softwareInput.value.trim();
+        if (descInput.value.trim()) currentExif["0th"][piexif.ImageIFD.ImageDescription] = descInput.value.trim();
+
+        if (dateInput.value.trim()) {
+          currentExif["Exif"][piexif.ExifIFD.DateTimeOriginal] = dateInput.value.trim();
+        }
+
+        // Dump & inject into Data URL
+        const exifBytes = piexif.dump(currentExif);
+        const newImageDataUrl = piexif.insert(exifBytes, currentDataUrl);
+
+        downloadImage(newImageDataUrl, `modified_${currentFileName}`);
+        showNotification("تم حفظ الميتاداتا وتنزيل الصورة بنجاح!");
+      } catch (err) {
+        console.error(err);
+        alert("حدث خطأ أثناء كتابة بيانات EXIF: " + err.message);
+      }
+    });
+
+    // Strip EXIF completely
+    stripBtn.addEventListener('click', () => {
+      if (!currentDataUrl) return;
+
+      try {
+        const cleanedDataUrl = piexif.remove(currentDataUrl);
+        currentExif = { "0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}, "thumbnail": null };
+        clearInputs();
+        
+        downloadImage(cleanedDataUrl, `clean_${currentFileName}`);
+        showNotification("تم مسح جميع بيانات EXIF وتنزيل الصورة نظيفة تماماً!");
+      } catch (err) {
+        console.error(err);
+        alert("وقع خطأ أثناء مسح البيانات: " + err.message);
+      }
+    });
+
+    // Trigger download
+    function downloadImage(dataUrl, filename) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
+</body>
+</html>
       }
 
       /* إعدادات اللوغو (التصويرة) */
